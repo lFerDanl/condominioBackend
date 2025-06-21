@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEmail, IsBoolean, IsDateString } from 'class-validator';
 
 export class CreateResidenteDto {
   @IsString()
@@ -20,4 +20,20 @@ export class CreateResidenteDto {
   @IsNumber()
   @IsNotEmpty()
   viviendaId: number;
+
+  @IsString()
+  @IsOptional()
+  telefono?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @IsDateString()
+  @IsOptional()
+  fecha_nacimiento?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  foto_registrada?: boolean;
 } 
