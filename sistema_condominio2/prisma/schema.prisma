@@ -39,6 +39,14 @@ model Residente {
   vivienda         Vivienda @relation(fields: [viviendaId], references: [id])
   viviendaId       Int
   visitas          Visita[]
+  telefono         String?
+  email            String?   @unique
+  fecha_nacimiento DateTime?
+  fecha_registro   DateTime?
+  foto_registrada  Boolean?
+  
+  // Relaciones
+  accesos          AccesoResidente[]
 }
 
 model Vivienda {
@@ -93,5 +101,223 @@ model EstadoQR {
   id     Int    @id @default(autoincrement())
   nombre String
   qrs    QR[]
+}
+
+// Modelo para empleados del condominio
+model Empleado {
+  id                    Int      @id @default(autoincrement())
+  nombre                String
+  apellido_paterno      String
+  apellido_materno      String
+  ci                    String   @unique
+  telefono              String?
+  email                 String?  @unique
+  fecha_nacimiento      DateTime?
+  fecha_contratacion    DateTime @default(now())
+  cargo                 String   // Ej: Conserje, Limpieza, Seguridad, Mantenimiento, Administrador
+  departamento          String   // Ej: Seguridad, Limpieza, Mantenimiento, Administración
+  salario               Decimal? @db.Decimal(10, 2)
+  horario_entrada       String?  // Ej: "08:00"
+  horario_salida        String?  // Ej: "18:00"
+  dias_trabajo          String?  // Ej: "Lunes a Viernes", "Lunes,Martes,Miércoles"
+  estado                EstadoEmpleado @default(ACTIVO)
+  foto_registrada       Boolean  @default(false)
+  observaciones         String?
+  fecha_actualizacion   DateTime @updatedAt
+  
+  // Relaciones
+  accesos               AccesoEmpleado[]
+  
+  @@map("empleados")
+}
+
+// Enum para el estado del empleado
+enum EstadoEmpleado {
+  ACTIVO
+  INACTIVO
+  SUSPENDIDO
+  DESPEDIDO
+  VACACIONES
+}
+
+// Modelo para registrar accesos de empleados
+model AccesoEmpleado {
+  id          Int      @id @default(autoincrement())
+  empleadoId  Int
+  empleado    Empleado @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  fecha_hora  DateTime @default(now())
+  tipo_acceso TipoAcceso // ENTRADA, SALIDA
+  ubicacion   String?   // Ej: "Portón Principal", "Entrada Servicio"
+  metodo_acceso String? // Ej: "Tarjeta", "Huella", "Código", "QR"
+  
+  @@map("accesos_empleados")
+}
+
+enum TipoAcceso {
+  ENTRADA
+  SALIDA
+}
+
+// Modelo para registrar accesos de residentes
+model AccesoResidente {
+  id          Int      @id @default(autoincrement())
+  residenteId Int
+  residente   Residente @relation(fields: [residenteId], references: [id], onDelete: Cascade)
+  fecha_hora  DateTime @default(now())
+  tipo_acceso TipoAccesoResidente // INGRESO
+  ubicacion   String?   // Ej: "Portón Principal", "Entrada Servicio", "Estacionamiento"
+  metodo_acceso String? // Ej: "Tarjeta", "Huella", "Código", "QR"
+  
+  @@map("accesos_residentes")
+}
+
+enum TipoAccesoResidente {
+  INGRESO
+}
+
+// Modelo para cámaras del sistema
+model Camara {
+  id                Int      @id @default(autoincrement())
+  nombre            String
+  ubicacion         String   // Ej: "Portón Principal", "Estacionamiento", "Área Común"
+  descripcion       String?
+  tipo              TipoCamara
+  estado            EstadoCamara @default(ACTIVA)
+  
+  // Configuración de conexión
+  ip_address        String?  // Para cámaras IP
+  puerto            Int?     // Para cámaras IP
+  username          String?  // Para cámaras IP
+  password          String?  // Para cámaras IP (encriptado)
+  url_stream        String?  // URL del stream RTSP/HTTP
+  
+  // Configuración de grabación
+  grabacion_activa  Boolean  @default(false)
+  retencion_dias    Int      @default(30) // Días de retención de grabaciones
+  
+  // Configuración de IA
+  modelos_ia        CamaraModeloIA[]
+  
+  // Metadatos
+  fecha_instalacion DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+  
+  @@map("camaras")
+}
+
+// Enum para el tipo de cámara
+enum TipoCamara {
+  IP
+  WEBCAM
+  USB
+  RTSP
+  HTTP
+}
+
+// Enum para el estado de la cámara
+enum EstadoCamara {
+  ACTIVA
+  INACTIVA
+  MANTENIMIENTO
+  FALLA
+  DESCONECTADA
+}
+
+// Modelo para los diferentes tipos de modelos de IA disponibles
+model ModeloIA {
+  id                Int      @id @default(autoincrement())
+  nombre            String   @unique // Ej: "Detección Facial", "Reconocimiento Facial", "Detección de Violencia"
+  descripcion       String?
+  tipo              TipoModeloIA
+  version           String   // Ej: "1.0", "2.1"
+  proveedor         String?  // Ej: "CompreFace", "OpenCV", "Custom"
+  
+  // Configuración del modelo
+  configuracion     Json?    // Configuración específica del modelo en formato JSON
+  activo            Boolean  @default(true)
+  
+  // Metadatos
+  fecha_creacion    DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+  
+  // Relaciones
+  camaras           CamaraModeloIA[]
+  
+  @@map("modelos_ia")
+}
+
+// Enum para los tipos de modelos de IA
+enum TipoModeloIA {
+  DETECCION_FACIAL
+  DETECCION_ACTIVIDAD_SOSPECHOSA
+  DETECCION_INTRUSION_ZONA_RESTRINGIDA
+  DETECCION_ACTIVIDAD_VIOLENTA
+  DETECCION_MOVIMIENTO
+}
+
+// Tabla de relación muchos a muchos entre cámaras y modelos de IA
+// Permite configurar qué modelos están activos en cada cámara
+model CamaraModeloIA {
+  id                Int      @id @default(autoincrement())
+  camaraId          Int
+  camara            Camara   @relation(fields: [camaraId], references: [id], onDelete: Cascade)
+  modeloIAId        Int
+  modeloIA          ModeloIA @relation(fields: [modeloIAId], references: [id], onDelete: Cascade)
+  
+  // Configuración específica del modelo para esta cámara
+  activo            Boolean  @default(true)
+  configuracion     Json?    // Configuración específica para esta cámara
+  sensibilidad      Float?   // Sensibilidad del modelo (0.0 - 1.0)
+  intervalo_analisis Int?    // Intervalo de análisis en milisegundos
+  
+  // Configuración de alertas
+  alertas_activas   Boolean  @default(true)
+  notificar_guardia Boolean  @default(true)
+  notificar_admin   Boolean  @default(false)
+  
+  // Metadatos
+  fecha_activacion  DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+  
+  // Relaciones con eventos/detecciones
+  eventos           EventoDeteccion[]
+  
+  @@unique([camaraId, modeloIAId])
+  @@map("camaras_modelos_ia")
+}
+
+// Modelo para registrar eventos de detección de los modelos de IA
+model EventoDeteccion {
+  id                Int      @id @default(autoincrement())
+  camaraModeloIAId  Int
+  camaraModeloIA    CamaraModeloIA @relation(fields: [camaraModeloIAId], references: [id], onDelete: Cascade)
+  
+  // Información del evento
+  tipo_evento       String   // Tipo específico del evento detectado
+  confianza         Float    // Nivel de confianza de la detección (0.0 - 1.0)
+  descripcion       String?
+  
+  // Datos de la detección
+  datos_deteccion   Json?    // Datos específicos de la detección (coordenadas, rostros, etc.)
+  imagen_captura    String?  // URL o path de la imagen capturada
+  
+  // Estado del evento
+  estado            EstadoEvento @default(NUEVO)
+  procesado         Boolean  @default(false)
+  
+  // Metadatos
+  fecha_deteccion   DateTime @default(now())
+  fecha_procesamiento DateTime?
+  
+  @@map("eventos_deteccion")
+}
+
+// Enum para el estado de los eventos de detección
+enum EstadoEvento {
+  NUEVO
+  PROCESANDO
+  PROCESADO
+  FALSO_POSITIVO
+  ERROR
 }
 
