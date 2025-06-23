@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+}
+
+model Visitante {
+  id               Int      @id @default(autoincrement())
+  nombre           String
+  apellido_paterno String
+  apellido_materno String
+  ci               String  @unique
+  visitas          Visita[]
+}
+
+model Residente {
+  id               Int      @id @default(autoincrement())
+  nombre           String
+  apellido_paterno String
+  apellido_materno String
+  ci               String
+  vivienda         Vivienda @relation(fields: [viviendaId], references: [id])
+  viviendaId       Int
+  visitas          Visita[]
+}
+
+model Vivienda {
+  id      Int      @id @default(autoincrement())
+  numero  String
+  bloque  String
+  zona    String
+  residentes Residente[]
+}
+
+model Guardia {
+  id     Int    @id @default(autoincrement())
+  nombre String
+  turno  String
+  visitas Visita[]
+}
+
+model Visita {
+  id                     Int           @id @default(autoincrement())
+  fecha_estimada_ingreso  DateTime
+  fecha_real_ingreso      DateTime?
+  fecha_salida            DateTime?
+  motivo_visita           String?
+  visitanteId             Int
+  visitante               Visitante    @relation(fields: [visitanteId], references: [id])
+  residenteId             Int
+  residente               Residente    @relation(fields: [residenteId], references: [id])
+  guardiaId               Int?
+  guardia                 Guardia?     @relation(fields: [guardiaId], references: [id])
+  estadoVisitaId          Int?
+  estadoVisita            EstadoVisita? @relation(fields: [estadoVisitaId], references: [id])
+  modalidadId             Int?
+  modalidad               modalidad?   @relation(fields: [modalidadId], references: [id])
+
+  
+  qr                      QR[]
+}
+
+
+model modalidad {
+  id     Int      @id @default(autoincrement())
+  nombre String
+  visitas Visita[]
+}
+
+model EstadoVisita {
+  id     Int      @id @default(autoincrement())
+  nombre String
+  visitas Visita[]
+}
+
+model QR {
+  id                Int       @id @default(autoincrement())
+  codigo            String    @unique
+  url_image         String
+  
+  fecha_generacion  DateTime
+  fecha_expiracion  DateTime
+  visitaId          Int
+  visita            Visita    @relation(fields: [visitaId], references: [id])
+  estadoQRId        Int
+  estadoQR          EstadoQR  @relation(fields: [estadoQRId], references: [id])
+}
+
+model EstadoQR {
+  id     Int    @id @default(autoincrement())
+  nombre String
+  qrs    QR[]
+}
+

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Visita Directa - Sistema de Condominio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4facfe;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .visitante-info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .visitante-info.existe {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .visitante-info.nuevo {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+
+        .ci-input-container {
+            position: relative;
+        }
+
+        .ci-status {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+        }
+
+        .ci-status.checking {
+            color: #ffc107;
+        }
+
+        .ci-status.exists {
+            color: #28a745;
+        }
+
+        .ci-status.new {
+            color: #17a2b8;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Registro de Visita Directa</h1>
+            <p>Sistema de Gestión de Condominio</p>
+        </div>
+
+        <div class="form-container">
+            <div id="alert" class="alert"></div>
+            
+            <form id="visitaForm">
+                <!-- Datos del Visitante -->
+                <div class="form-section">
+                    <h2 class="section-title">👤 Datos del Visitante</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nombre">Nombre *</label>
+                            <input type="text" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="apellido_paterno">Apellido Paterno *</label>
+                            <input type="text" id="apellido_paterno" name="apellido_paterno" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="apellido_materno">Apellido Materno *</label>
+                            <input type="text" id="apellido_materno" name="apellido_materno" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ci">Cédula de Identidad *</label>
+                            <div class="ci-input-container">
+                                <input type="text" id="ci" name="ci" required>
+                                <span class="ci-status" id="ciStatus"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visitante-info" id="visitanteInfo">
+                        <div id="visitanteInfoContent"></div>
+                    </div>
+                </div>
+
+                <!-- Datos de la Visita -->
+                <div class="form-section">
+                    <h2 class="section-title">🏠 Datos de la Visita</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="fecha_estimada_ingreso">Fecha Estimada de Ingreso *</label>
+                            <input type="datetime-local" id="fecha_estimada_ingreso" name="fecha_estimada_ingreso" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fecha_real_ingreso">Fecha Real de Ingreso</label>
+                            <input type="datetime-local" id="fecha_real_ingreso" name="fecha_real_ingreso">
+                        </div>
+                        <div class="form-group">
+                            <label for="motivo_visita">Motivo de la Visita</label>
+                            <input type="text" id="motivo_visita" name="motivo_visita" placeholder="Ej: Entrega de paquete, Reunión familiar, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="residenteId">Residente *</label>
+                            <select id="residenteId" name="residenteId" required>
+                                <option value="">Seleccione un residente</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="guardiaId">Guardia</label>
+                            <select id="guardiaId" name="guardiaId">
+                                <option value="">Seleccione un guardia (opcional)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="estadoVisitaId">Estado de la Visita *</label>
+                            <select id="estadoVisitaId" name="estadoVisitaId" required>
+                                <option value="">Seleccione el estado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Procesando registro...</p>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    📝 Registrar Visita Directa
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de la API
+        const API_BASE_URL = 'http://localhost:3001'; // Cambiar según tu configuración
+
+        // Elementos del DOM
+        const form = document.getElementById('visitaForm');
+        const alertDiv = document.getElementById('alert');
+        const loadingDiv = document.getElementById('loading');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Cargar datos iniciales
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarResidentes();
+            cargarGuardias();
+            cargarEstadosVisita();
+            establecerFechaActual();
+        });
+
+        // Establecer fecha actual como valor por defecto
+        function establecerFechaActual() {
+            const ahora = new Date();
+            const fechaActual = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
+            
+            document.getElementById('fecha_estimada_ingreso').value = fechaActual;
+        }
+
+        // Cargar residentes
+        async function cargarResidentes() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/residentes`);
+                const residentes = await response.json();
+                
+                const select = document.getElementById('residenteId');
+                residentes.forEach(residente => {
+                    const option = document.createElement('option');
+                    option.value = residente.id;
+                    option.textContent = `${residente.nombre} ${residente.apellido_paterno} - ${residente.vivienda?.numero || 'N/A'}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error cargando residentes:', error);
+                mostrarAlerta('Error al cargar la lista de residentes', 'error');
+            }
+        }
+
+        // Cargar guardias
+        async function cargarGuardias() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/guardias`);
+                const guardias = await response.json();
+                
+                const select = document.getElementById('guardiaId');
+                guardias.forEach(guardia => {
+                    const option = document.createElement('option');
+                    option.value = guardia.id;
+                    option.textContent = `${guardia.nombre} - ${guardia.turno}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error cargando guardias:', error);
+                // No mostrar error ya que es opcional
+            }
+        }
+
+        // Cargar estados de visita
+        async function cargarEstadosVisita() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/estado-visitas`);
+                const estados = await response.json();
+                
+                const select = document.getElementById('estadoVisitaId');
+                estados.forEach(estado => {
+                    const option = document.createElement('option');
+                    option.value = estado.id;
+                    option.textContent = estado.nombre;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error cargando estados de visita:', error);
+                mostrarAlerta('Error al cargar los estados de visita', 'error');
+            }
+        }
+
+        // Manejar envío del formulario
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validar formulario
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Mostrar loading
+            mostrarLoading(true);
+            submitBtn.disabled = true;
+
+            try {
+                // Recopilar datos del formulario
+                const formData = new FormData(form);
+                const data = {
+                    visitante: {
+                        nombre: formData.get('nombre'),
+                        apellido_paterno: formData.get('apellido_paterno'),
+                        apellido_materno: formData.get('apellido_materno'),
+                        ci: formData.get('ci')
+                    },
+                    fecha_estimada_ingreso: formData.get('fecha_estimada_ingreso'),
+                    fecha_real_ingreso: formData.get('fecha_real_ingreso') || null,
+                    fecha_salida: null,
+                    residenteId: parseInt(formData.get('residenteId')),
+                    guardiaId: formData.get('guardiaId') ? parseInt(formData.get('guardiaId')) : null,
+                    estadoVisitaId: parseInt(formData.get('estadoVisitaId')),
+                    motivo_visita: formData.get('motivo_visita')
+                };
+
+                // Enviar datos a la API
+                const response = await fetch(`${API_BASE_URL}/visitas/directa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const resultado = await response.json();
+                    mostrarAlerta('✅ Visita registrada exitosamente', 'success');
+                    form.reset();
+                    establecerFechaActual();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error al registrar la visita');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarAlerta(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                mostrarLoading(false);
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Funciones de utilidad
+        function mostrarAlerta(mensaje, tipo) {
+            alertDiv.textContent = mensaje;
+            alertDiv.className = `alert alert-${tipo}`;
+            alertDiv.style.display = 'block';
+            
+            // Ocultar después de 5 segundos
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function mostrarLoading(mostrar) {
+            loadingDiv.style.display = mostrar ? 'block' : 'none';
+        }
+
+        // Validación en tiempo real
+        document.getElementById('ci').addEventListener('input', function(e) {
+            // Solo permitir números
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            
+            // Verificar si el visitante existe después de un delay
+            clearTimeout(window.ciCheckTimeout);
+            window.ciCheckTimeout = setTimeout(() => {
+                verificarVisitante(e.target.value);
+            }, 500);
+        });
+
+        // Función para verificar si el visitante existe
+        async function verificarVisitante(ci) {
+            if (!ci || ci.length < 3) {
+                ocultarInfoVisitante();
+                return;
+            }
+
+            const statusElement = document.getElementById('ciStatus');
+            const infoElement = document.getElementById('visitanteInfo');
+            const infoContent = document.getElementById('visitanteInfoContent');
+
+            try {
+                statusElement.textContent = '⏳';
+                statusElement.className = 'ci-status checking';
+
+                const response = await fetch(`${API_BASE_URL}/visitantes/ci/${ci}`);
+                
+                if (response.ok) {
+                    const visitante = await response.json();
+                    statusElement.textContent = '✅';
+                    statusElement.className = 'ci-status exists';
+                    
+                    infoContent.innerHTML = `
+                        <strong>✅ Visitante encontrado:</strong><br>
+                        <strong>Nombre:</strong> ${visitante.nombre} ${visitante.apellido_paterno} ${visitante.apellido_materno}<br>
+                        <strong>CI:</strong> ${visitante.ci}<br>
+                        <em>Se usará el visitante existente para esta visita.</em>
+                    `;
+                    infoElement.className = 'visitante-info existe';
+                    infoElement.style.display = 'block';
+                } else {
+                    statusElement.textContent = '🆕';
+                    statusElement.className = 'ci-status new';
+                    
+                    infoContent.innerHTML = `
+                        <strong>🆕 Nuevo visitante:</strong><br>
+                        <em>No se encontró un visitante con esta CI. Se creará un nuevo registro.</em>
+                    `;
+                    infoElement.className = 'visitante-info nuevo';
+                    infoElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error verificando visitante:', error);
+                statusElement.textContent = '';
+                statusElement.className = 'ci-status';
+                ocultarInfoVisitante();
+            }
+        }
+
+        function ocultarInfoVisitante() {
+            const statusElement = document.getElementById('ciStatus');
+            const infoElement = document.getElementById('visitanteInfo');
+            
+            statusElement.textContent = '';
+            statusElement.className = 'ci-status';
+            infoElement.style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
