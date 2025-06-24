@@ -62,6 +62,7 @@ export class EmpleadoService {
   }
 
   async update(id: number, updateEmpleadoDto: UpdateEmpleadoDto) {
+    console.log(updateEmpleadoDto);
     // Verificar que el empleado existe
     await this.findOne(id);
 
